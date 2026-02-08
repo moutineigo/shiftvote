@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>シフト入力</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  background: #f7f7f7;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.deadline {
+  font-size: 12px;
+  color: #555;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: max-content;
+  background: #fff;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  min-width: 56px;
+  height: 48px;
+  text-align: center;
+  font-size: 18px;
+}
+
+th {
+  background: #f0f0f0;
+  font-size: 12px;
+}
+
+th.sticky-top {
+  position: sticky;
+  top: 52px;
+  z-index: 5;
+}
+
+th.sticky-left,
+td.sticky-left {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 4;
+}
+
+th.sticky-left {
+  background: #f0f0f0;
+  z-index: 6;
+}
+
+td.cell {
+  cursor: pointer;
+}
+
+td.cell.saving {
+  opacity: 0.5;
+}
+
+.date-head {
+  line-height: 1.2;
+  font-size: 11px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1 id="title">Loading...</h1>
+  <div class="deadline" id="deadline"></div>
+</header>
+
+<div class="table-wrap">
+  <table id="shiftTable"></table>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxxWTAGgbHffek-lAP8GiqCxaKQk5CVJZSpCP-c6EM6fHN5wbXODU48FAcN3ZkKXKop/exec";
+const params = new URLSearchParams(location.search);
+const month = params.get("month") || "2026-04";
+
+let META = null;
+let RESP_MAP = {};
+let lastTouched = {};
+
+function nextValue(cur, choices) {
+  const i = choices.indexOf(cur);
+  return choices[(i + 1) % choices.length];
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  return r.json();
+}
+
+async function postJSON(body) {
+  return fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(r => r.json());
+}
+
+function buildRespMap(responses) {
+  const map = {};
+  responses.forEach(r => {
+    map[`${r.member_id}|${r.date}`] = r.value;
+  });
+  return map;
+}
+
+function render() {
+  const table = document.getElementById("shiftTable");
+  table.innerHTML = "";
+
+  const thead = document.createElement("thead");
+  const tr1 = document.createElement("tr");
+
+  const thName = document.createElement("th");
+  thName.textContent = "担当者";
+  thName.className = "sticky-left sticky-top";
+  tr1.appendChild(thName);
+
+  META.dates.forEach(d => {
+    const th = document.createElement("th");
+    th.className = "sticky-top";
+    th.innerHTML = `
+      <div class="date-head">
+        ${d.date.slice(5).replace("-", "/")}<br>
+        ${d.weekday}<br>
+        ${d.time}<br>
+        ${d.place}
+      </div>`;
+    tr1.appendChild(th);
+  });
+
+  thead.appendChild(tr1);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  META.members.forEach(m => {
+    const tr = document.createElement("tr");
+
+    const tdName = document.createElement("td");
+    tdName.textContent = m.member_name;
+    tdName.className = "sticky-left";
+    tr.appendChild(tdName);
+
+    META.dates.forEach(d => {
+      const key = `${m.member_id}|${d.date}`;
+      const td = document.createElement("td");
+      td.className = "cell";
+      td.textContent = RESP_MAP[key] || "ー";
+
+      td.onclick = async () => {
+        const old = td.textContent;
+        const next = nextValue(old, META.choices);
+        td.textContent = next;
+        td.classList.add("saving");
+
+        lastTouched[key] = Date.now();
+
+        const res = await postJSON({
+          action: "set",
+          month_key: META.month_key,
+          member_id: m.member_id,
+          date: d.date,
+          value: next
+        });
+
+        td.classList.remove("saving");
+        if (!res.ok) {
+          alert("保存失敗");
+          td.textContent = old;
+        } else {
+          RESP_MAP[key] = next;
+        }
+      };
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+}
+
+async function loadAll() {
+  META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
+  document.getElementById("title").textContent = META.title;
+  document.getElementById("deadline").textContent = "入力期限: " + META.deadline;
+
+  const r = await fetchJSON(`${API_URL}?action=responses&month=${month}`);
+  RESP_MAP = buildRespMap(r.responses || []);
+  render();
+
+  if (META.ui_refresh_sec > 0) {
+    setTimeout(loadAll, META.ui_refresh_sec * 1000);
+  }
+}
+
+loadAll();
+</script>
+
+</body>
+</html>
