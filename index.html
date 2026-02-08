@@ -54,16 +54,13 @@ th {
   font-size: 12px;
 }
 
-thead {
-  position: sticky;
-  top: var(--header-h, 52px);
-  z-index: 7;
-}
+thead { position: static; }
 
-th.sticky-top {
-  position: static;
-  top: auto;
-  z-index: auto;
+th.sticky-top{
+   position: sticky;
+   top: var(--header-h, 52px);
+   z-index: 7;
+   background: #f0f0f0;
 }
 
 th.sticky-left,
@@ -218,6 +215,8 @@ function render() {
   });
 
   table.appendChild(tbody);
+requestAnimationFrame(setStickyTop_);
+
 }
 
 
