@@ -56,7 +56,7 @@ th {
 
 th.sticky-top {
   position: sticky;
-  top: 52px;
+  top: var(--header-h, 52px);
   z-index: 5;
 }
 
@@ -214,10 +214,16 @@ function render() {
   table.appendChild(tbody);
 }
 
-async function loadAll() {
-  META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
-console.log("META.month_key=", META.month_key, "members=", META.members);
 
+function setStickyTop_() {
+  const h = document.querySelector("header")?.offsetHeight || 52;
+  document.documentElement.style.setProperty("--header-h", `${h}px`);
+}
+
+
+async function loadAll() {
+  setStickyTop_();
+  META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
   document.getElementById("title").textContent = META.title;
   document.getElementById("deadline").textContent = "入力期限: " + META.deadline;
 
