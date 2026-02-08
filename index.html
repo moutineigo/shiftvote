@@ -178,30 +178,32 @@ function render() {
       td.className = "cell";
       td.textContent = RESP_MAP[key] || "ー";
 
-      td.onclick = async () => {
-        const old = td.textContent;
-        const next = nextValue(old, META.choices);
-        td.textContent = next;
-        td.classList.add("saving");
+  td.onclick = async () => {
+    const old = td.textContent;
+    const next = nextValue(old, META.choices);
+    td.textContent = next;
+    td.classList.add("saving");
 
-        lastTouched[key] = Date.now();
+    lastTouched[key] = Date.now();
 
-        const res = await postJSON({
-          action: "set",
-          month_key: META.month_key,
-          member_id: m.member_id,
-          date: d.date,
-          value: next
-        });
+    const url =
+      `${API_URL}?action=set` +
+      `&month_key=${encodeURIComponent(META.month_key)}` +
+      `&member_id=${encodeURIComponent(m.member_id)}` +
+      `&date=${encodeURIComponent(d.date)}` +
+      `&value=${encodeURIComponent(next)}`;
 
-        td.classList.remove("saving");
-        if (!res.ok) {
-          alert("保存失敗");
-          td.textContent = old;
-        } else {
-          RESP_MAP[key] = next;
-        }
-      };
+    const res = await fetchJSON(url);
+
+    td.classList.remove("saving");
+    if (!res.ok) {
+      alert("保存失敗: " + (res.error || ""));
+      td.textContent = old;
+    } else {
+      RESP_MAP[key] = next;
+    }
+  };
+
 
       tr.appendChild(td);
     });
