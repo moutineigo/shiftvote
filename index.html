@@ -54,10 +54,16 @@ th {
   font-size: 12px;
 }
 
-th.sticky-top {
+thead {
   position: sticky;
   top: var(--header-h, 52px);
-  z-index: 5;
+  z-index: 7;
+}
+
+th.sticky-top {
+  position: static;
+  top: auto;
+  z-index: auto;
 }
 
 th.sticky-left,
