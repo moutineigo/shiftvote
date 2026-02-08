@@ -216,6 +216,8 @@ function render() {
 
 async function loadAll() {
   META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
+console.log("META.month_key=", META.month_key, "members=", META.members);
+
   document.getElementById("title").textContent = META.title;
   document.getElementById("deadline").textContent = "入力期限: " + META.deadline;
 
