@@ -184,7 +184,7 @@ let META = null;
 let LOCK_MAP = {}; // { member_id: true/false }
 
 function lockStorageKey_() {
-  return `shift_lock:${META?.month_key || month}`;
+  return `shift_lock:${META.month_key}`;
 }
 
 function loadLocks_() {
@@ -297,7 +297,7 @@ function render() {
   btn.className = "lock-btn";
 
   const ok = isRowComplete_(m.member_id);
-  const locked = !!LOCK_MAP[m.member_id];
+  const locked = (LOCK_MAP[m.member_id] === true);
 
   btn.textContent = ok ? "記入OK" : "未記入";
   btn.classList.toggle("is-ok", ok);
@@ -315,6 +315,7 @@ function render() {
     }
 
     LOCK_MAP[m.member_id] = !LOCK_MAP[m.member_id];
+    if (LOCK_MAP[m.member_id] !== true) delete LOCK_MAP[m.member_id];
     saveLocks_();
     render();
   };
