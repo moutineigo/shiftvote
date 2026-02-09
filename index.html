@@ -120,6 +120,43 @@ td.cell.saving {
   margin-top: 4px;
 }
 
+th.lock-head {
+  min-width: 92px;
+  font-size: 12px;
+}
+
+td.lock-cell {
+  min-width: 92px;
+  background: #f9fbff;
+}
+
+.lock-btn {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #4aa3df;
+  background: #cfefff;
+  cursor: pointer;
+}
+
+.lock-btn.is-ok {
+  background: #bfe6ff;
+}
+
+.lock-btn.is-ng {
+  background: #d7f2ff;
+  opacity: 0.95;
+}
+
+/* ロック中：その行の入力ボタンを無効化 */
+tr.is-locked td.cell .cell-btn {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+tr.is-locked td.cell .cell-cur {
+  opacity: 0.8;
+}
 
 </style>
 </head>
@@ -143,6 +180,37 @@ const params = new URLSearchParams(location.search);
 const month = params.get("month") || "2026-04";
 
 let META = null;
+
+let LOCK_MAP = {}; // { member_id: true/false }
+
+function lockStorageKey_() {
+  return `shift_lock:${META?.month_key || month}`;
+}
+
+function loadLocks_() {
+  try {
+    const raw = localStorage.getItem(lockStorageKey_());
+    LOCK_MAP = raw ? JSON.parse(raw) : {};
+  } catch {
+    LOCK_MAP = {};
+  }
+}
+
+function saveLocks_() {
+  try {
+    localStorage.setItem(lockStorageKey_(), JSON.stringify(LOCK_MAP));
+  } catch {}
+}
+
+function isRowComplete_(memberId) {
+  // その担当者の全日程が「ー以外」ならOK
+  return META.dates.every(d => {
+    const v = RESP_MAP[`${memberId}|${d.date}`] || "ー";
+    return v !== "ー" && v !== "";
+  });
+}
+
+
 let RESP_MAP = {};
 let lastTouched = {};
 
@@ -184,6 +252,16 @@ function render() {
   thName.className = "sticky-left sticky-top";
   tr1.appendChild(thName);
 
+  const thLock = document.createElement("th");
+  thLock.textContent = "記入ロック";
+  thLock.className = "sticky-top lock-head";
+  tr1.appendChild(thLock);
+
+
+
+
+
+
   META.dates.forEach(d => {
     const th = document.createElement("th");
     th.className = "sticky-top";
@@ -209,6 +287,41 @@ function render() {
     tdName.textContent = m.member_name;
     tdName.className = "sticky-left";
     tr.appendChild(tdName);
+
+
+  const tdLock = document.createElement("td");
+  tdLock.className = "lock-cell";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "lock-btn";
+
+  const ok = isRowComplete_(m.member_id);
+  const locked = !!LOCK_MAP[m.member_id];
+
+  btn.textContent = ok ? "記入OK" : "未記入";
+  btn.classList.toggle("is-ok", ok);
+  btn.classList.toggle("is-ng", !ok);
+
+  if (locked) tr.classList.add("is-locked");
+
+  btn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isRowComplete_(m.member_id)) {
+      alert("未記入のためロックできません（全日程を入力するとロックできます）");
+      return;
+    }
+
+    LOCK_MAP[m.member_id] = !LOCK_MAP[m.member_id];
+    saveLocks_();
+    render();
+  };
+
+  tdLock.appendChild(btn);
+  tr.appendChild(tdLock);
+
 
     META.dates.forEach(d => {
       const key = `${m.member_id}|${d.date}`;
@@ -320,6 +433,10 @@ function setStickyTop_() {
 async function loadAll() {
   setStickyTop_();
   META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
+
+  loadLocks_();
+
+
   document.getElementById("title").textContent = META.title;
   document.getElementById("deadline").textContent = "入力期限: " + META.deadline;
 
