@@ -78,7 +78,7 @@ th.sticky-left {
 }
 
 td.cell {
-  cursor: pointer;
+  cursor: default;
 }
 
 td.cell.saving {
@@ -89,6 +89,38 @@ td.cell.saving {
   line-height: 1.2;
   font-size: 11px;
 }
+
+.cell-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.cell-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.cell-btn {
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid #e67e22;
+  background: #ffe5d0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cell-cur {
+  font-size: 18px;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+
 </style>
 </head>
 
@@ -102,6 +134,8 @@ td.cell.saving {
 <div class="table-wrap">
   <table id="shiftTable"></table>
 </div>
+
+
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzugcCtqSIeA4qMRSMj0hRU-8rozsSwAdmwGTNshAfqSeKy-yUTf_jNi__nEUFn6kvJ/exec";
@@ -178,10 +212,66 @@ function render() {
 
     META.dates.forEach(d => {
       const key = `${m.member_id}|${d.date}`;
-      const td = document.createElement("td");
-      td.className = "cell";
-      td.textContent = RESP_MAP[key] || "ー";
 
+const td = document.createElement("td");
+td.className = "cell";
+
+const box = document.createElement("div");
+box.className = "cell-box";
+
+const btns = document.createElement("div");
+btns.className = "cell-btns";
+
+["〇", "×", "△", "？"].forEach(v => {
+  if (!META.choices.includes(v)) return;
+
+  const b = document.createElement("button");
+  b.className = "cell-btn";
+  b.textContent = v;
+  b.onclick = async (e) => {
+  e.preventDefault();
+    e.stopPropagation();
+
+    const curSpan = box.querySelector(".cell-cur");
+    const old = curSpan.textContent;
+    if (old === v) return;
+
+    curSpan.textContent = v;
+    td.classList.add("saving");
+
+    const url =
+      `${API_URL}?action=set` +
+      `&month_key=${encodeURIComponent(META.month_key)}` +
+      `&member_id=${encodeURIComponent(m.member_id)}` +
+      `&date=${encodeURIComponent(d.date)}` +
+      `&value=${encodeURIComponent(v)}`;
+
+    const res = await fetchJSON(url);
+    td.classList.remove("saving");
+
+    if (!res.ok) {
+      alert("保存失敗: " + (res.error || ""));
+      curSpan.textContent = old;
+    } else {
+      RESP_MAP[key] = v;
+    }
+  };
+
+  btns.appendChild(b);
+});
+
+const cur = document.createElement("div");
+cur.className = "cell-cur";
+cur.textContent = RESP_MAP[key] || "ー";
+
+box.appendChild(btns);
+box.appendChild(cur);
+td.appendChild(box);
+
+
+
+
+/*
   td.onclick = async () => {
     const old = td.textContent;
     const next = nextValue(old, META.choices);
@@ -207,7 +297,7 @@ function render() {
       RESP_MAP[key] = next;
     }
   };
-
+*/
 
       tr.appendChild(td);
     });
