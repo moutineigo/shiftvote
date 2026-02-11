@@ -177,7 +177,7 @@ tr.is-locked td.cell .cell-cur {
 
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzugcCtqSIeA4qMRSMj0hRU-8rozsSwAdmwGTNshAfqSeKy-yUTf_jNi__nEUFn6kvJ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx4VXuUl4eYEXKIY53RAuofk4dkMmhjMIR9tTSfoB-H6QixSuzEPjDd043kfySk8QON/exec";
 const params = new URLSearchParams(location.search);
 const month = params.get("month") || "2026-04";
 
@@ -432,25 +432,47 @@ function setStickyTop_() {
   document.documentElement.style.setProperty("--header-h", `${h}px`);
 }
 
+let loading = false;
 
 async function loadAll() {
-  setStickyTop_();
-  META = await fetchJSON(`${API_URL}?action=meta&month=${month}`);
+  // 多重起動防止（前回の loadAll が終わる前に次が走るのを防ぐ）
+  if (loading) return;
+  loading = true;
 
-  loadLocks_();
+  try {
+    setStickyTop_();
 
+    // meta + responses を1回で取得（GAS側で action=all を実装している前提）
+    const all = await fetchJSON(`${API_URL}?action=all&month=${month}`);
 
-  document.getElementById("title").textContent = META.title;
-  document.getElementById("deadline").textContent = "入力期限: " + META.deadline;
+    // all.ok の確認（GASのjsonOut_仕様に合わせる）
+    if (!all || all.ok === false) {
+      alert("読み込み失敗: " + (all?.error || "unknown error"));
+      return;
+    }
 
-  const r = await fetchJSON(`${API_URL}?action=responses&month=${month}`);
-  RESP_MAP = buildRespMap(r.responses || []);
-  render();
+    META = all.meta;
 
-  if (META.ui_refresh_sec > 0) {
-    setTimeout(loadAll, META.ui_refresh_sec * 1000);
+    // 画面表示（タイトル・期限）
+    document.getElementById("title").textContent = META.title || "";
+    document.getElementById("deadline").textContent = "入力期限: " + (META.deadline || "");
+
+    // responses を反映して描画
+    RESP_MAP = buildRespMap(all.responses || []);
+    render();
+
+  } catch (err) {
+    alert("読み込みエラー: " + String(err));
+  } finally {
+    loading = false;
+
+    // 自動再読込（meta が取れた場合のみ）
+    if (META && Number(META.ui_refresh_sec) > 0) {
+      setTimeout(loadAll, Number(META.ui_refresh_sec) * 1000);
+    }
   }
 }
+
 
 loadAll();
 </script>
