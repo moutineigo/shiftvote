@@ -245,17 +245,20 @@ td.cell { padding: 0; }
 
 /* 奇数行 */
 #shiftTable tbody tr:nth-child(odd) td:nth-child(odd)  { background: #ffffff; } /* 奇数列 */
-#shiftTable tbody tr:nth-child(odd) td:nth-child(even) { background: #f6f9ff; } /* 偶数列 */
+#shiftTable tbody tr:nth-child(odd) td:nth-child(even) { background: #f2f6ff; } /* 偶数列 */
 
 /* 偶数行（行の縞を足す） */
 #shiftTable tbody tr:nth-child(even) td:nth-child(odd)  { background: #fafafa; } /* 奇数列 */
-#shiftTable tbody tr:nth-child(even) td:nth-child(even) { background: #f2f6ff; } /* 偶数列 */
+#shiftTable tbody tr:nth-child(even) td:nth-child(even) { background: #e6efff; } /* 偶数列 */
 
 /* sticky-left（担当者列）も同じ縞に追従させる */
 #shiftTable tbody tr:nth-child(odd)  td.sticky-left { background: #ffffff; }
 #shiftTable tbody tr:nth-child(even) td.sticky-left { background: #fafafa; }
 
-td.lock-cell { background: #f9fbff !important; }
+td.lock-cell { background: inherit; }
+
+#shiftTable tbody tr:hover td { background: #fff3d9; }
+#shiftTable tbody tr:hover td.sticky-left { background: #fff3d9; }
 
 </style>
 </head>
