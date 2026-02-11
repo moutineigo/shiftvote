@@ -274,6 +274,23 @@ td.cell { padding: 0; }
   background: #fff3d9 !important;
 }
 
+#shiftTable tbody tr.is-hover-row td {
+  background: #fff3d9 !important;
+}
+
+/* 列ハイライト */
+#shiftTable tbody td.is-hover-col {
+  background: #fff3d9 !important;
+}
+
+/* sticky列も含める */
+#shiftTable tbody tr.is-hover-row td.sticky-left,
+#shiftTable tbody td.is-hover-col.sticky-left,
+#shiftTable tbody td.is-hover-col.lock-cell {
+  background: #fff3d9 !important;
+}
+
+
 </style>
 </head>
 
@@ -351,11 +368,6 @@ function render() {
   thLock.textContent = "記入ロック";
   thLock.className = "sticky-top lock-head";
   tr1.appendChild(thLock);
-
-
-
-
-
 
   META.dates.forEach(d => {
     const th = document.createElement("th");
@@ -453,8 +465,6 @@ function render() {
   tdLock.appendChild(wrap);
   tr.appendChild(tdLock);
 
-/////
-
     META.dates.forEach(d => {
       const key = `${m.member_id}|${d.date}`;
 
@@ -503,6 +513,35 @@ btns.className = "cell-btns";
       RESP_MAP[key] = v;
     }
   };
+
+// ===== 行＋列ホバー強調 =====
+const table = document.getElementById("shiftTable");
+
+table.addEventListener("mouseover", (e) => {
+  const td = e.target.closest("td");
+  if (!td) return;
+
+  const tr = td.parentElement;
+  const index = td.cellIndex;
+
+  // 行にクラス付与
+  tr.classList.add("is-hover-row");
+
+  // 同じ列すべてにクラス付与
+  document.querySelectorAll(`#shiftTable tbody tr td:nth-child(${index+1})`)
+    .forEach(cell => cell.classList.add("is-hover-col"));
+});
+
+table.addEventListener("mouseout", () => {
+  document.querySelectorAll(".is-hover-row")
+    .forEach(el => el.classList.remove("is-hover-row"));
+
+  document.querySelectorAll(".is-hover-col")
+    .forEach(el => el.classList.remove("is-hover-col"));
+});
+
+
+
 
   btns.appendChild(b);
 });
