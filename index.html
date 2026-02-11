@@ -9,6 +9,7 @@
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   margin: 0;
+  padding: 8px; 
   background: #f7f7f7;
 }
 
@@ -18,7 +19,9 @@ header {
   background: #fff;
   z-index: 10;
   border-bottom: 1px solid #ccc;
-  padding: 10px;
+  /* padding: 10px; */
+  padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
+
 }
 
 
@@ -33,10 +36,21 @@ h1 {
   color: #555;
 }
 
+/*
 .table-wrap {
   overflow: auto;
   height: calc(100vh - var(--header-h, 52px));
   background: #fff;
+}
+*/
+
+.table-wrap{
+  overflow: auto;
+  height: calc(100vh - var(--header-h, 52px) - 16px);
+  padding: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-radius: 10px;
 }
 
 table {
@@ -175,6 +189,12 @@ tr.is-locked td.cell .cell-cur {
   opacity: 0.35;
   pointer-events: none;
   filter: grayscale(100%);
+}
+
+@supports (height: 100dvh) {
+  .table-wrap{
+    height: calc(100dvh - var(--header-h, 52px) - 16px);
+  }
 }
 
 </style>
