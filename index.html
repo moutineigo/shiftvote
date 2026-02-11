@@ -194,7 +194,7 @@ tr.is-locked td.cell .cell-cur {
 
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwZ3HuNY4rU3FdH6YZQze5R63b9l65eNldmmGyxtbAT2-EJDUpwUwL0YPYiXQavd-6L/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwA4xSX7Wfu4LYID-ZNNDcbB-uhuniM-A8G_rWz6g_mhplWB_HowDWxF40OQnRG83M9/exec";
 const params = new URLSearchParams(location.search);
 const month = params.get("month") || "2026-04";
 
@@ -324,6 +324,7 @@ function render() {
 
     const url =
       `${API_URL}?action=setmemberlock` +
+      `&month_key=${encodeURIComponent(META.month_key)}` + 
       `&member_id=${encodeURIComponent(m.member_id)}` +
       `&locked=${nextLocked}`;
 
