@@ -33,26 +33,11 @@ h1 {
   color: #555;
 }
 
-/*
 .table-wrap {
-  overflow-x: auto;
-  padding-top: 0;
-}
-*/
-
-.table-wrap {
-  overflow: auto; /* ← x も y もここに集約 */
-  height: calc(100vh - var(--header-h, 52px)); /* header分を引く */
-  background: #fff; /* スクロール時の透け防止（好み） */
-}
-
-/*
-table {
-  border-collapse: collapse;
-  width: max-content;
+  overflow: auto;
+  height: calc(100vh - var(--header-h, 52px));
   background: #fff;
 }
-*/
 
 table {
   border-collapse: separate;
@@ -74,33 +59,16 @@ th {
   font-size: 12px;
 }
 
-
-/*
-thead { position: static; }
-
-
-th.sticky-top{
-  position: static;
-  top: auto;
-  z-index: auto;
-  background: #f0f0f0;
-}
-*/
-
-/**/
 th.sticky-left.sticky-top{
   z-index: 8;
 }
 
-/**/
 th.sticky-top{
   position: sticky;
-/*  top: var(--header-h, 52px);*/
   top: 0; 
   z-index: 5;
   background: #f0f0f0;
 }
-
 
 th.sticky-left,
 td.sticky-left {
