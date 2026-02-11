@@ -59,12 +59,28 @@ th {
 
 thead { position: static; }
 
+/*
 th.sticky-top{
   position: static;
   top: auto;
   z-index: auto;
   background: #f0f0f0;
 }
+*/
+
+///
+th.sticky-top{
+  position: sticky;
+  top: var(--header-h, 52px);
+  z-index: 8;
+  background: #f0f0f0;
+}
+
+///
+th.sticky-left.sticky-top {
+  z-index: 12;
+}
+
 
 th.sticky-left,
 td.sticky-left {
