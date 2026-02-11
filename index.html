@@ -239,6 +239,28 @@ td.cell { padding: 0; }
   }
 }
 
+/* ===== 見やすさ用：偶数行/偶数列を薄く色替え ===== */
+
+/* 偶数行（tbodyだけ。ヘッダは除外） */
+#shiftTable tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+/* 偶数列（担当者列が1列目なので、2列目以降で偶数） */
+#shiftTable tbody td:nth-child(even) {
+  background: #f6f9ff;
+}
+
+/* 行×列が重なるところ（少しだけ濃く） */
+#shiftTable tbody tr:nth-child(even) td:nth-child(even) {
+  background: #f2f6ff;
+}
+
+/* sticky-left（担当者列）は、縞が上書きされるように */
+#shiftTable tbody tr:nth-child(even) td.sticky-left {
+  background: #fafafa;
+}
+
 </style>
 </head>
 
