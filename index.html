@@ -46,6 +46,7 @@ h1 {
 
 .table-wrap{
   overflow: auto;
+  overscroll-behavior: contain;
   height: calc(100vh - var(--header-h, 52px) - 16px);
   padding: 8px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
@@ -66,6 +67,7 @@ th, td {
   height: 48px;
   text-align: center;
   font-size: 18px;
+  overflow: hidden;  
 }
 
 th {
@@ -191,11 +193,29 @@ tr.is-locked td.cell .cell-cur {
   filter: grayscale(100%);
 }
 
+td, th { position: relative; }
+
+/* 左固定（担当者列）：本文より上 */
+td.sticky-left {
+  z-index: 20;
+}
+
+/* 上固定（ヘッダ行）：本文より上 */
+th.sticky-top {
+  z-index: 30;
+}
+
+/* 左上（担当者ヘッダ）：最前面 */
+th.sticky-left.sticky-top {
+  z-index: 40;
+}
+
 @supports (height: 100dvh) {
   .table-wrap{
     height: calc(100dvh - var(--header-h, 52px) - 16px);
   }
 }
+
 
 </style>
 </head>
