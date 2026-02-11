@@ -263,6 +263,17 @@ td.cell { padding: 0; }
 #shiftTable tbody tr:hover td { background: #fff3d9; }
 #shiftTable tbody tr:hover td.sticky-left { background: #fff3d9; }
 
+#shiftTable tbody tr:hover td:nth-child(even),
+#shiftTable tbody tr:hover td:nth-child(even):nth-child(even) {
+  background: #fff3d9 !important;
+}
+
+/* lock列と担当者列も確実に揃える */
+#shiftTable tbody tr:hover td.sticky-left,
+#shiftTable tbody tr:hover td.lock-cell {
+  background: #fff3d9 !important;
+}
+
 </style>
 </head>
 
