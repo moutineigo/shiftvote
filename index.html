@@ -358,6 +358,11 @@ td.comment-cell { min-width: 64px; background: inherit; }
 
 /* 集計行（ヘッダ2段目） */
 th.summary-top{
+
+th.summary-top.sticky-top { z-index: 29; }              /* 1段目(30)より一段下 */
+th.summary-top.sticky-left { z-index: 41; }             /* 左固定の集計セルは最前面寄り */
+th.summary-top.sticky-left.sticky-top { z-index: 50; }  /* 左上（集計×担当者）を最前面 */
+
   position: sticky;
   top: 48px;          /* 1段目ヘッダの高さに合わせる（後述でJSから上書き推奨） */
   z-index: 29;
@@ -581,17 +586,17 @@ function render() {
 
   // 左3列（担当者/ロック/コメント）は空でOK（または「集計」と書く）
   const thS1 = document.createElement("th");
-  thS1.className = "sticky-left summary-top";
+  thS1.className = "sticky-left sticky-top summary-top";
   thS1.textContent = "";   // ここに "集計" と書いてもOK
   tr2.appendChild(thS1);
 
   const thS2 = document.createElement("th");
-  thS2.className = "summary-top";
+  thS2.className = "sticky-top summary-top";
   thS2.textContent = "";
   tr2.appendChild(thS2);
 
   const thS3 = document.createElement("th");
-  thS3.className = "summary-top";
+  thS3.className = "sticky-top summary-top";
   thS3.textContent = "";
   tr2.appendChild(thS3);
 
