@@ -356,6 +356,30 @@ td.comment-cell { min-width: 64px; background: inherit; }
   cursor: pointer;
 }
 
+/* 集計行（ヘッダ2段目） */
+th.summary-top{
+  position: sticky;
+  top: 48px;          /* 1段目ヘッダの高さに合わせる（後述でJSから上書き推奨） */
+  z-index: 29;
+  background: #f0f0f0;
+  font-size: 11px;
+  line-height: 1.25;
+  height: 40px;       /* 少し低め */
+  vertical-align: middle;
+}
+
+.summary-box{
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  gap: 6px 10px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.summary-box span{
+  font-variant-numeric: tabular-nums;
+}
+
 </style>
 </head>
 
@@ -478,6 +502,43 @@ function buildRespMap(responses) {
   return map;
 }
 
+function buildDaySummary_(dateStr) {
+  const counts = { "〇":0, "×":0, "△":0, "？":0, "ー":0 };
+
+  META.members.forEach(m => {
+    const v = RESP_MAP[`${m.member_id}|${dateStr}`] || "ー";
+    if (counts[v] === undefined) counts["ー"]++;
+    else counts[v]++;
+  });
+
+  return counts;
+}
+
+
+function refreshSummaryForDate_(dateStr){
+  const idx = META.dates.findIndex(d => d.date === dateStr);
+  if (idx < 0) return;
+
+  // 集計行は thead の2行目（1行目=日時、2行目=集計）
+  const tr2 = document.querySelector("#shiftTable thead tr:nth-child(2)");
+  if (!tr2) return;
+
+  // 左3列（担当者/ロック/コメント）の次が日付列
+  const th = tr2.children[3 + idx];
+  if (!th) return;
+
+  const c = buildDaySummary_(dateStr);
+  th.innerHTML = `
+    <div class="summary-box">
+      <span>〇:${c["〇"]}</span>
+      <span>×:${c["×"]}</span>
+      <span>△:${c["△"]}</span>
+      <span>？:${c["？"]}</span>
+      <span>ー:${c["ー"]}</span>
+    </div>
+  `;
+}
+
 function render() {
   const table = document.getElementById("shiftTable");
   table.innerHTML = "";
@@ -514,6 +575,48 @@ function render() {
   });
 
   thead.appendChild(tr1);
+
+  // ===== 集計行（ヘッダ2段目）=====
+  const tr2 = document.createElement("tr");
+
+  // 左3列（担当者/ロック/コメント）は空でOK（または「集計」と書く）
+  const thS1 = document.createElement("th");
+  thS1.className = "sticky-left summary-top";
+  thS1.textContent = "";   // ここに "集計" と書いてもOK
+  tr2.appendChild(thS1);
+
+  const thS2 = document.createElement("th");
+  thS2.className = "summary-top";
+  thS2.textContent = "";
+  tr2.appendChild(thS2);
+
+  const thS3 = document.createElement("th");
+  thS3.className = "summary-top";
+  thS3.textContent = "";
+  tr2.appendChild(thS3);
+
+  // 日付列ごとの集計
+  META.dates.forEach(d => {
+    const th = document.createElement("th");
+    th.className = "summary-top";
+
+    const c = buildDaySummary_(d.date);
+
+    th.innerHTML = `
+      <div class="summary-box">
+        <span>〇:${c["〇"]}</span>
+        <span>×:${c["×"]}</span>
+        <span>△:${c["△"]}</span>
+        <span>？:${c["？"]}</span>
+        <span>ー:${c["ー"]}</span>
+      </div>
+    `;
+    tr2.appendChild(th);
+  });
+
+  thead.appendChild(tr2);
+
+
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
@@ -660,6 +763,7 @@ btns.className = "cell-btns";
       curSpan.textContent = old;
     } else {
       RESP_MAP[key] = v;
+      refreshSummaryForDate_(d.date);
     }
   };
 
@@ -722,7 +826,10 @@ if (!res || !res.ok) {
   });
 
   table.appendChild(tbody);
-requestAnimationFrame(setStickyTop_);
+  requestAnimationFrame(() => {
+    setStickyTop_();       // ヘッダ（青バー）高さをCSS変数へ
+    adjustSummaryTop_();   // 1段目ヘッダ高さに合わせて集計行をずらす
+  });
 
 }
 
@@ -730,6 +837,17 @@ requestAnimationFrame(setStickyTop_);
 function setStickyTop_() {
   const h = document.querySelector("header")?.offsetHeight || 52;
   document.documentElement.style.setProperty("--header-h", `${h}px`);
+}
+
+function adjustSummaryTop_(){
+  // 1段目ヘッダの高さ（日時/場所行）
+  const firstHead = document.querySelector("#shiftTable thead tr:first-child th");
+  const h1 = firstHead ? firstHead.offsetHeight : 48;
+
+  // 集計行（summary-top）の sticky top を合わせる
+  document.querySelectorAll("th.summary-top").forEach(th => {
+    th.style.top = `${h1}px`;
+  });
 }
 
 let loading = false;
@@ -753,6 +871,7 @@ function bindCommentModalButtons_() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeCommentModal_();
   });
+
 }
 
 
