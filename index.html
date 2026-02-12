@@ -290,6 +290,71 @@ td.cell { padding: 0; }
   background: #fff3d9 !important;
 }
 
+/* ===== コメントモーダル ===== */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,0.35);
+  align-items:center;
+  justify-content:center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal.show{ display:flex; }
+
+.modal-box{
+  width: min(520px, 100%);
+  background:#fff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.modal-title{
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+#commentText{
+  width: 100%;
+  height: 140px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.modal-actions{
+  display:flex;
+  gap: 8px;
+  justify-content:flex-end;
+  margin-top: 10px;
+}
+
+.modal-actions button{
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+th.comment-head { min-width: 64px; }
+td.comment-cell { min-width: 64px; background: inherit; }
+
+.comment-btn{
+  width: 40px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+}
 
 </style>
 </head>
@@ -305,10 +370,19 @@ td.cell { padding: 0; }
   <table id="shiftTable"></table>
 </div>
 
-
+<div id="commentModal" class="modal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-title">コメント</div>
+    <textarea id="commentText" maxlength="1000" placeholder="最大1000文字"></textarea>
+    <div class="modal-actions">
+      <button id="commentSave" type="button">OK(保存)</button>
+      <button id="commentCancel" type="button">キャンセル</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwA4xSX7Wfu4LYID-ZNNDcbB-uhuniM-A8G_rWz6g_mhplWB_HowDWxF40OQnRG83M9/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyKNyEXja0NtCgNOH7yqgoAaG25qAeF4vvrbWn0SGrA3B4cIIBj9KAfei6uTN_v8Xkj/exec";
 const params = new URLSearchParams(location.search);
 const month = params.get("month") || "2026-04";
 
@@ -324,7 +398,59 @@ function isRowComplete_(memberId) {
 
 
 let RESP_MAP = {};
+let COMMENT_MAP = {};
 let lastTouched = {};
+
+let CURRENT_COMMENT_MEMBER_ID = null;
+
+function openCommentModal_(memberId) {
+  CURRENT_COMMENT_MEMBER_ID = memberId;
+
+  const modal = document.getElementById("commentModal");
+  const ta = document.getElementById("commentText");
+  ta.value = (COMMENT_MAP[memberId] || "");
+
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+
+  // 少し待ってフォーカス（iOS対策）
+  setTimeout(() => ta.focus(), 0);
+}
+
+function closeCommentModal_() {
+  const modal = document.getElementById("commentModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  CURRENT_COMMENT_MEMBER_ID = null;
+}
+
+async function saveComment_() {
+  if (!CURRENT_COMMENT_MEMBER_ID) return;
+
+  const text = String(document.getElementById("commentText").value || "");
+
+  // 1000文字制限（保険）
+  const clipped = text.length > 1000 ? text.slice(0, 1000) : text;
+
+  const url =
+    `${API_URL}?action=setcomment` +
+    `&month_key=${encodeURIComponent(META.month_key)}` +
+    `&member_id=${encodeURIComponent(CURRENT_COMMENT_MEMBER_ID)}` +
+    `&comment=${encodeURIComponent(clipped)}`;
+
+  const res = await fetchJSON(url);
+  if (!res.ok) {
+    alert("コメント保存失敗: " + (res.error || ""));
+    return;
+  }
+
+  // ローカル反映 → 📝/＋ を即更新
+  COMMENT_MAP[CURRENT_COMMENT_MEMBER_ID] = clipped;
+  closeCommentModal_();
+  render();
+  setupHoverHighlight_(); // render後にホバー再バインド
+}
+
 
 function nextValue(cur, choices) {
   const i = choices.indexOf(cur);
@@ -368,6 +494,11 @@ function render() {
   thLock.textContent = "記入ロック";
   thLock.className = "sticky-top lock-head";
   tr1.appendChild(thLock);
+
+  const thComment = document.createElement("th");
+  thComment.textContent = "コメント";
+  thComment.className = "sticky-top  comment-head";
+  tr1.appendChild(thComment);
 
   META.dates.forEach(d => {
     const th = document.createElement("th");
@@ -465,6 +596,24 @@ function render() {
   tdLock.appendChild(wrap);
   tr.appendChild(tdLock);
 
+  const tdComment = document.createElement("td");
+  tdComment.className = "comment-cell";
+
+  const btnC = document.createElement("button");
+  btnC.type = "button";
+  btnC.className = "comment-btn";
+  btnC.textContent =
+   (COMMENT_MAP[m.member_id] && COMMENT_MAP[m.member_id].trim()) ? "📝" : "＋";
+
+  btnC.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openCommentModal_(m.member_id);
+  };
+
+  tdComment.appendChild(btnC);
+  tr.appendChild(tdComment);
+
     META.dates.forEach(d => {
       const key = `${m.member_id}|${d.date}`;
 
@@ -514,35 +663,6 @@ btns.className = "cell-btns";
     }
   };
 
-// ===== 行＋列ホバー強調 =====
-const table = document.getElementById("shiftTable");
-
-table.addEventListener("mouseover", (e) => {
-  const td = e.target.closest("td");
-  if (!td) return;
-
-  const tr = td.parentElement;
-  const index = td.cellIndex;
-
-  // 行にクラス付与
-  tr.classList.add("is-hover-row");
-
-  // 同じ列すべてにクラス付与
-  document.querySelectorAll(`#shiftTable tbody tr td:nth-child(${index+1})`)
-    .forEach(cell => cell.classList.add("is-hover-col"));
-});
-
-table.addEventListener("mouseout", () => {
-  document.querySelectorAll(".is-hover-row")
-    .forEach(el => el.classList.remove("is-hover-row"));
-
-  document.querySelectorAll(".is-hover-col")
-    .forEach(el => el.classList.remove("is-hover-col"));
-});
-
-
-
-
   btns.appendChild(b);
 });
 
@@ -573,7 +693,17 @@ td.appendChild(box);
       `&date=${encodeURIComponent(d.date)}` +
       `&value=${encodeURIComponent(next)}`;
 
-    const res = await fetchJSON(url);
+let res;
+try {
+  res = await fetchJSON(url);
+} catch (e) {
+  alert("コメント保存失敗（通信/JSON）: " + String(e));
+  return;
+}
+if (!res || !res.ok) {
+  alert("コメント保存失敗: " + (res?.error || ""));
+  return;
+}
 
     td.classList.remove("saving");
     if (!res.ok) {
@@ -604,6 +734,58 @@ function setStickyTop_() {
 
 let loading = false;
 
+function bindCommentModalButtons_() {
+  const btnSave = document.getElementById("commentSave");
+  const btnCancel = document.getElementById("commentCancel");
+  const modal = document.getElementById("commentModal");
+
+  if (btnSave) btnSave.onclick = saveComment_;
+  if (btnCancel) btnCancel.onclick = closeCommentModal_;
+
+  // 背景クリックで閉じる
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeCommentModal_();
+    });
+  }
+
+  // Escで閉じる（PC）
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeCommentModal_();
+  });
+}
+
+
+
+// ===== 行＋列ホバー強調（1回だけ登録）=====
+function setupHoverHighlight_() {
+  const table = document.getElementById("shiftTable");
+  if (!table || table.dataset.hoverBound === "1") return;
+  table.dataset.hoverBound = "1";
+
+  table.addEventListener("mouseover", (e) => {
+    const td = e.target.closest("td");
+    if (!td) return;
+
+    const tr = td.parentElement;
+    const index = td.cellIndex;
+
+    tr.classList.add("is-hover-row");
+
+    document
+      .querySelectorAll(`#shiftTable tbody tr td:nth-child(${index + 1})`)
+      .forEach(cell => cell.classList.add("is-hover-col"));
+  });
+
+  table.addEventListener("mouseout", () => {
+    document.querySelectorAll(".is-hover-row")
+      .forEach(el => el.classList.remove("is-hover-row"));
+    document.querySelectorAll(".is-hover-col")
+      .forEach(el => el.classList.remove("is-hover-col"));
+  });
+}
+
+
 async function loadAll() {
   // 多重起動防止（前回の loadAll が終わる前に次が走るのを防ぐ）
   if (loading) return;
@@ -623,6 +805,12 @@ async function loadAll() {
 
     META = all.meta;
 
+    // comments を反映（member_id -> comment）
+    COMMENT_MAP = {};
+    (all.comments || []).forEach(c => {
+      COMMENT_MAP[c.member_id] = c.comment || "";
+    });
+
     // 画面表示（タイトル・期限）
     document.getElementById("title").textContent = META.title || "";
     document.getElementById("deadline").textContent = "入力期限: " + (META.deadline || "");
@@ -630,6 +818,8 @@ async function loadAll() {
     // responses を反映して描画
     RESP_MAP = buildRespMap(all.responses || []);
     render();
+
+    setupHoverHighlight_();
 
   } catch (err) {
     alert("読み込みエラー: " + String(err));
@@ -643,7 +833,7 @@ async function loadAll() {
   }
 }
 
-
+bindCommentModalButtons_();
 loadAll();
 </script>
 
